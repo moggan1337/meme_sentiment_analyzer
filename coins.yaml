@@ -1,0 +1,56 @@
+# Meme Coin Watchlist Configuration
+
+watchlist:
+  - id: shiba-inu
+    symbol: SHIB
+    name: Shiba Inu
+    enabled: true
+
+  - id: dogecoin
+    symbol: DOGE
+    name: Dogecoin
+    enabled: true
+
+  - id: pepe
+    symbol: PEPE
+    name: Pepe
+    enabled: true
+
+  - id: floki
+    symbol: FLOKI
+    name: Floki
+    enabled: true
+
+  - id: bonk
+    symbol: BONK
+    name: Bonk
+    enabled: true
+
+  - id: dogwifhat
+    symbol: WIF
+    name: dogwifhat
+    enabled: true
+
+  - id: brett
+    symbol: BRETT
+    name: Brett
+    enabled: true
+
+  - id: mog-2
+    symbol: MOG
+    name: Mog
+    enabled: true
+
+  - id: guy
+    symbol: GUY
+    name: GUY
+    enabled: true
+
+# Analysis thresholds per coin
+thresholds:
+  sentiment_min: 50
+  mention_growth_min: 50
+  volume_change_min: 20
+  price_change_min: 5
+  cooldown_hours: 4
+  max_per_report: 3

@@ -1,0 +1,53 @@
+# Meme Coin Sentiment Analyzer Configuration
+
+app:
+  name: "Meme Coin Sentiment Analyzer"
+  version: "1.0.0"
+  log_level: "INFO"
+
+# API Configuration
+api:
+  coingecko:
+    base_url: "https://api.coingecko.com/api/v3"
+    rate_limit: 10  # requests per minute
+    timeout: 30
+  reddit:
+    user_agent: "MemeCoinSentimentAnalyzer/1.0"
+    rate_limit: 60
+    timeout: 30
+
+# Sentiment Analysis
+sentiment:
+  min_confidence: 0.3
+  bullish_threshold: 50
+  bearish_threshold: -50
+  weights:
+    sentiment: 0.35
+    mentions: 0.25
+    volume: 0.20
+    price_change: 0.20
+
+# Analysis Settings
+analysis:
+  check_interval_minutes: 15
+  min_data_points: 3
+  lookback_hours: 24
+
+# Reporting
+reporting:
+  output_dir: "reports"
+  format: "markdown"
+  include_charts: true
+  auto_generate: false
+  threshold_override: null
+
+# Storage
+storage:
+  type: "json"
+  data_dir: "data"
+  retention_days: 30
+
+# Scheduler
+scheduler:
+  enabled: true
+  timezone: "UTC"

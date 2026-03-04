@@ -1,142 +1,174 @@
-"""Main orchestration agent for meme coin sentiment analysis."""
+"""
+Meme Coin Sentiment Analyzer - Main Agent
 
-import logging
+Orchestrates the sentiment analysis workflow:
+1. Collects data from CoinGecko and Reddit
+2. Analyzes sentiment and computes scores
+3. Filters based on rules engine criteria
+4. Generates reports when thresholds are met
+"""
+
 import yaml
-from datetime import datetime, timedelta
+import logging
+import os
+from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional
 
-from .ranker import CoinRanker
-from .generator import ReportGenerator
-from data_sources.coingecko import CoinGeckoConnector
-from data_sources.reddit import RedditConnector
+from data_sources.coingecko import CoinGeckoClient
+from data_sources.reddit import RedditClient
 from utils.sentiment_analyzer import SentimentAnalyzer
 from utils.rules_engine import RulesEngine
+from engine.ranker import ScoreRanker
+from engine.generator import ReportGenerator
 
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
 
 
-class MemeCoinAgent:
-    """Main agent for orchestrating meme coin sentiment analysis."""
-
-    def __init__(self, config_path: str = "config/config.yaml",
-                 coins_path: str = "config/coins.yaml"):
+class MemeAgent:
+    """Main agent for meme coin sentiment analysis."""
+    
+    def __init__(self, config_path: str = None):
         """Initialize the agent with configuration."""
-        self.config = self._load_yaml(config_path)
-        self.coins = self._load_yaml(coins_path)
+        self.base_dir = Path(__file__).parent.parent
+        self.config_path = config_path or self.base_dir / "config.yaml"
+        self.coins_path = self.base_dir / "coins.yaml"
         
-        self.rankers = CoinRanker(self.config)
-        self.generator = ReportGenerator(self.config)
-        self.sentiment = SentimentAnalyzer()
-        self.rules = RulesEngine(self.config)
+        # Load configuration
+        with open(self.config_path, 'r') as f:
+            self.config = yaml.safe_load(f)
         
-        # Data connectors
-        self.coingecko = CoinGeckoConnector()
-        self.reddit = RedditConnector()
+        with open(self.coins_path, 'r') as f:
+            self.coins_config = yaml.safe_load(f)
         
-        # Track last report times for cooldown
-        self.last_report: Dict[str, datetime] = {}
+        # Initialize components
+        self.coingecko = CoinGeckoClient(
+            base_url=self.config['api']['coingecko']['base_url'],
+            rate_limit=self.config['api']['coingecko']['rate_limit'],
+            timeout=self.config['api']['coingecko']['timeout']
+        )
         
-    def _load_yaml(self, path: str) -> dict:
-        """Load YAML configuration file."""
-        with open(path, 'r') as f:
-            return yaml.safe_load(f)
-
-    async def analyze_coin(self, symbol: str) -> Optional[dict]:
-        """Analyze a single coin."""
-        try:
-            # Fetch market data
-            market_data = await self.coingecko.get_coin_data(symbol)
-            
-            # Fetch social data
-            social_data = await self.reddit.get_mentions(symbol)
-            
-            # Analyze sentiment
-            sentiment_score = self.sentiment.analyze(social_data.get('posts', []))
-            
-            # Combine data
-            analysis = {
-                'symbol': symbol,
-                'timestamp': datetime.now(),
-                'market': market_data,
-                'social': social_data,
-                'sentiment': sentiment_score
-            }
-            
-            # Apply rules
-            if not self.rules.passes(analysis):
-                return None
-                
-            # Score the coin
-            score = self.rankers.calculate_score(analysis)
-            analysis['score'] = score
-            
-            return analysis
-            
-        except Exception as e:
-            logger.error(f"Error analyzing {symbol}: {e}")
-            return None
-
-    async def run_analysis(self) -> List[dict]:
-        """Run analysis on all watchlist coins."""
+        self.reddit = RedditClient(
+            user_agent=self.config['api']['reddit']['user_agent'],
+            rate_limit=self.config['api']['reddit']['rate_limit'],
+            timeout=self.config['api']['reddit']['timeout']
+        )
+        
+        self.sentiment_analyzer = SentimentAnalyzer(
+            min_confidence=self.config['sentiment']['min_confidence']
+        )
+        
+        self.rules_engine = RulesEngine(
+            thresholds=self.config['sentiment'],
+            coin_thresholds=self.coins_config['thresholds']
+        )
+        
+        self.ranker = ScoreRanker(
+            weights=self.config['sentiment']['weights']
+        )
+        
+        self.generator = ReportGenerator(
+            output_dir=self.base_dir / self.config['reporting']['output_dir'],
+            format=self.config['reporting']['format']
+        )
+        
+        logger.info("MemeAgent initialized successfully")
+    
+    def run_analysis(self) -> dict:
+        """Run a complete analysis cycle."""
+        logger.info("Starting analysis cycle")
+        
+        watchlist = [c for c in self.coins_config['watchlist'] if c.get('enabled', True)]
         results = []
         
-        for coin in self.coins['watchlist']:
+        for coin in watchlist:
+            coin_id = coin['id']
             symbol = coin['symbol']
-            result = await self.analyze_coin(symbol)
-            if result:
-                results.append(result)
-        
-        # Rank results
-        ranked = self.rankers.rank(results)
-        
-        return ranked
-
-    async def generate_report_if_needed(self, results: List[dict]) -> Optional[str]:
-        """Generate report only if thresholds are met."""
-        # Check cooldown
-        now = datetime.now()
-        eligible = []
-        
-        for r in results:
-            symbol = r['symbol']
-            last = self.last_report.get(symbol)
-            cooldown_hours = self.config.get('analysis', {}).get('cooldown_hours', 4)
             
-            if not last or (now - last) > timedelta(hours=cooldown_hours):
-                eligible.append(r)
+            try:
+                # Collect market data
+                market_data = self.coingecko.get_coin_data(coin_id)
+                
+                # Collect social data
+                social_data = self.reddit.get_coin_mentions(symbol)
+                
+                # Analyze sentiment
+                sentiment_result = self.sentiment_analyzer.analyze(
+                    social_data.get('texts', [])
+                )
+                
+                # Combine data for scoring
+                coin_data = {
+                    'coin_id': coin_id,
+                    'symbol': symbol,
+                    'name': coin['name'],
+                    'market_data': market_data,
+                    'social_data': social_data,
+                    'sentiment': sentiment_result
+                }
+                
+                # Check if passes rules
+                passes, reasons = self.rules_engine.check(coin_data)
+                
+                if passes:
+                    # Calculate score
+                    score = self.ranker.calculate(coin_data)
+                    coin_data['score'] = score
+                    coin_data['reasons'] = reasons
+                    results.append(coin_data)
+                    logger.info(f"{symbol} passed filters with score {score:.2f}")
+                else:
+                    logger.debug(f"{symbol} did not pass filters: {reasons}")
+                    
+            except Exception as e:
+                logger.error(f"Error analyzing {coin_id}: {e}")
         
-        if not eligible:
-            return None
-            
-        # Limit to top N
-        max_per_report = self.config.get('analysis', {}).get('max_coins_per_report', 3)
-        eligible = eligible[:max_per_report]
+        # Sort by score
+        results = sorted(results, key=lambda x: x['score'], reverse=True)
         
-        # Generate report
-        report_path = self.generator.generate(eligible)
-        
-        # Update last report times
-        for r in eligible:
-            self.last_report[r['symbol']] = now
-            
-        return report_path
-
-    async def run(self):
-        """Main execution loop."""
-        logger.info("Starting meme coin analysis...")
-        
-        results = await self.run_analysis()
-        
+        # Generate report if criteria met
         if results:
-            report = await self.generate_report_if_needed(results)
-            if report:
-                logger.info(f"Report generated: {report}")
+            report_path = self.generator.generate(results)
+            logger.info(f"Report generated: {report_path}")
+            return {
+                'success': True,
+                'coins_analyzed': len(watchlist),
+                'coins_passing': len(results),
+                'report_path': report_path,
+                'top_coins': results[:3]
+            }
         else:
             logger.info("No coins met threshold criteria - no report generated")
+            return {
+                'success': True,
+                'coins_analyzed': len(watchlist),
+                'coins_passing': 0,
+                'report_path': None
+            }
+
+
+def main():
+    """Main entry point."""
+    agent = MemeAgent()
+    result = agent.run_analysis()
+    
+    print(f"\n{'='*50}")
+    print("ANALYSIS COMPLETE")
+    print(f"{'='*50}")
+    print(f"Coins analyzed: {result['coins_analyzed']}")
+    print(f"Coins passing: {result['coins_passing']}")
+    
+    if result['report_path']:
+        print(f"Report: {result['report_path']}")
+        print("\nTop coins:")
+        for coin in result.get('top_coins', []):
+            print(f"  {coin['symbol']}: {coin['score']:.2f}")
+    else:
+        print("No report generated (no coins met criteria)")
 
 
 if __name__ == "__main__":
-    import asyncio
-    agent = MemeCoinAgent()
-    asyncio.run(agent.run())
+    main()
