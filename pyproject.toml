@@ -1,0 +1,58 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "meme-sentiment-analyzer"
+version = "1.0.0"
+description = "Meme Coin Sentiment Analyzer - Analyzes Reddit, Twitter/X, and CoinGecko data to rank meme coins by sentiment and market momentum"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.9"
+authors = [
+    {name = "moggan1337", email = ""}
+]
+keywords = ["cryptocurrency", "sentiment-analysis", "meme-coins", "trading", "reddit", "twitter"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Office/Business :: Financial :: Investment",
+]
+dependencies = [
+    "requests>=2.28.0",
+    "pandas>=1.5.0",
+    "textblob>=0.17.1",
+    "nltk>=3.8",
+    "APScheduler>=3.10.0",
+    "PyYAML>=6.0",
+    "python-dotenv>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+]
+
+[project.scripts]
+meme-sentiment-analyzer = "engine.meme_agent:main"
+
+[tool.setuptools]
+packages = ["config", "data_sources", "engine", "utils"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --cov=. --cov-report=term-missing"
+
+[tool.coverage.run]
+source = ["config", "data_sources", "engine", "utils"]
+omit = ["*/tests/*", "*/test_*.py"]
