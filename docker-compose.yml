@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  meme-analyzer:
+    build: .
+    container_name: meme-sentiment-analyzer
+    restart: unless-stopped
+    environment:
+      - TZ=UTC
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+      - ./reports:/app/reports
+      - ./logs:/app/logs
+    networks:
+      - analyzer-network
+
+  # Optional: API server for dashboard (if implemented)
+  # meme-api:
+  #   build: .
+  #   container_name: meme-sentiment-analyzer-api
+  #   restart: unless-stopped
+  #   ports:
+  #     - "8000:8000"
+  #   command: ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+  #   env_file:
+  #     - .env
+  #   volumes:
+  #     - ./data:/app/data
+  #     - ./reports:/app/reports
+  #   networks:
+  #     - analyzer-network
+
+networks:
+  analyzer-network:
+    driver: bridge
