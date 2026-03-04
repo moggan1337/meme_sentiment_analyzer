@@ -1,0 +1,28 @@
+watchlist:
+  - symbol: SHIB
+    name: Shiba Inu
+    platforms: [ethereum, solana]
+  - symbol: DOGE
+    name: Dogecoin
+    platforms: [dogecoin]
+  - symbol: PEPE
+    name: Pepe
+    platforms: [ethereum]
+  - symbol: FLOKI
+    name: FLOKI
+    platforms: [ethereum, solana]
+  - symbol: BONK
+    name: Bonk
+    platforms: [solana]
+  - symbol: WIF
+    name: dogwifhat
+    platforms: [solana]
+  - symbol: BRETT
+    name: Brett
+    platforms: [base]
+  - symbol: MOG
+    name: Mog Coin
+    platforms: [ethereum]
+  - symbol: GUY
+    name: GUY Token
+    platforms: [solana]

@@ -1,0 +1,22 @@
+sentiment:
+  min_confidence: 0.3
+  bullish_threshold: 50
+  bearish_threshold: -50
+  weights:
+    social: 0.4
+    news: 0.3
+    technical: 0.2
+    fundamentals: 0.1
+
+analysis:
+  min_mentions: 10
+  timeframes: [1h, 4h, 24h, 7d]
+  top_n: 10
+
+scheduler:
+  analysis_interval_minutes: 60
+  report_interval_hours: 24
+
+logging:
+  level: INFO
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
