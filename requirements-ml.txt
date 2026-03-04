@@ -1,0 +1,7 @@
+# ML/AI Dependencies for advanced sentiment analysis
+# Install with: pip install -r requirements-ml.txt
+
+transformers>=4.30.0
+torch>=2.0.0
+sentencepiece>=0.1.99
+protobuf>=3.20.0

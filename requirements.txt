@@ -7,3 +7,9 @@ PyYAML>=6.0
 python-dotenv>=1.0.0
 pytest>=7.0.0
 pytest-cov>=4.0.0
+
+# Optional: For advanced sentiment analysis (RoBERTa)
+# Install with: pip install -r requirements.txt -r requirements-ml.txt
+# transformers>=4.30.0
+# torch>=2.0.0
+# sentencepiece>=0.1.99
