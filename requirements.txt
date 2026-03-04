@@ -16,3 +16,13 @@ pytest-cov>=4.0.0
 
 # Optional: Discord bot support
 # discord.py>=2.0.0
+
+# Optional: Telegram bot notifications
+# python-telegram-bot>=20.0
+
+# Web dashboard
+fastapi>=0.100.0
+uvicorn>=0.23.0
+
+# Optional: Visualization and charts
+matplotlib>=3.7.0

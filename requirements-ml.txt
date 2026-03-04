@@ -8,3 +8,6 @@ protobuf>=3.20.0
 
 # Optional: Discord bot
 discord.py>=2.0.0
+
+# ML dependencies
+scikit-learn>=1.3.0
